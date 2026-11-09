@@ -73,26 +73,20 @@ export function GrowthCompass() {
         <div className="tool-side">
           <span className="kicker">Free leadership assessment</span>
           <h2 className="h2"><SplitWords text="The CCM" /> <span className="grad-text">Growth Compass</span></h2>
-          <p className="lede">Find out what your leaders and team need next. Ten quick questions, an instant personalized result, and the service that fits.</p>
-          <div className="meta"><span>About 3 minutes</span><span>10 questions</span><span>Instant results</span></div>
+          <p className="lede">Find out what your leaders need next, in about three minutes.</p>
           <motion.div className="big-wheel" animate={{ rotate: step * 36 }} transition={{ type: 'spring', stiffness: 60, damping: 14 }}>
             <Pinwheel fill={fill} />
           </motion.div>
         </div>
 
         <Reveal>
-          <div id="compass-card" ref={card} className="glass tool" aria-live="polite" style={{ minHeight: '32rem' }}>
+          <div id="compass-card" ref={card} className="glass tool" aria-live="polite" style={{ minHeight: '24rem' }}>
             <AnimatePresence mode="wait">
               {step < 0 && (
                 <motion.div key="intro" {...screen}>
                   <span className="label">Your compass is waiting</span>
-                  <h3 className="qtitle">Where should your leadership growth point next?</h3>
-                  <p className="qhint">Answer honestly. There are no wrong answers, only a clearer direction. You'll see one of six Growth Compass profiles, a breakdown of where you are today, and a recommended first step.</p>
-                  <div className="opts" style={{ marginBottom: '1.6rem' }}>
-                    {(['bench', 'stretch', 'team', 'direction', 'systems', 'scale'] as Need[]).map((k) => (
-                      <div key={k} className="opt" style={{ ['--c' as string]: RESULTS[k].color, cursor: 'default' }}><span className="dot"><i /></span>{RESULTS[k].name}</div>
-                    ))}
-                  </div>
+                  <h3 className="qtitle">Where should your growth point next?</h3>
+                  <p className="qhint">Ten quick taps. You'll get one of six profiles and the single next step that fits.</p>
                   <Magnetic><button className="btn" onClick={() => go(0)}>Start my compass <span className="arr">→</span></button></Magnetic>
                 </motion.div>
               )}

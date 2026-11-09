@@ -42,14 +42,14 @@ export function Hero() {
             ))}
           </h1>
           <motion.p className="lede" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9, duration: 0.9 }}>
-            Leadership development, executive coaching and facilitation for government agencies, global corporations and mission-driven organizations, backed by 30+ years in the room with leaders.
+            Leadership development, coaching and facilitation for government, enterprise and mission-driven teams.
           </motion.p>
           <motion.div className="cta-row" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05, duration: 0.9 }}>
             <Magnetic><a className="btn" href="#compass" onClick={onAnchor}>Take the free Growth Compass <span className="arr" aria-hidden="true">→</span></a></Magnetic>
             <Magnetic><a className="btn ghost" href="#contact" onClick={onAnchor}>Book a strategy call</a></Magnetic>
           </motion.div>
           <motion.div className="chips" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.3, duration: 1 }}>
-            {['WBENC', 'WOMEN-OWNED', 'NMSDC', 'DBE', 'EVERYTHING DiSC® PARTNER', 'DDI', 'INSIDEOUT'].map((c) => <span key={c}>{c}</span>)}
+            {['WOMAN-OWNED', 'WBENC · NMSDC · DBE', '30+ YEARS'].map((c) => <span key={c}>{c}</span>)}
           </motion.div>
         </motion.div>
 

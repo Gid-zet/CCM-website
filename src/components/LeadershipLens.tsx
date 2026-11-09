@@ -1,109 +1,70 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { LENSES, ORDER, PLAY, SCENARIOS, SOURCES, type LensKey, type ScenarioKey } from '../data/lens';
+import { submitLead } from '../lib/ghl';
 import { REGIONS, type Region } from './brainData';
-import { LENSES, ORDER, PLAY, SCENARIOS, SOURCES, type Lens, type LensKey, type ScenarioKey } from '../data/lens';
+import { Magnetic, burst } from './ui';
 
 const Brain3D = lazy(() => import('./Brain3D'));
 
-/** If WebGL is unavailable, keep the rest of the tool working. */
+/** If WebGL is unavailable, keep the rest of the experience working. */
 class BrainBoundary extends Component<{ children: ReactNode }, { err: boolean }> {
   state = { err: false };
   static getDerivedStateFromError() { return { err: true }; }
-  render() { return this.state.err ? <div className="brain-canvas brain-loading">3D isn't available on this device, but the flow beside it still shows each step.</div> : this.props.children; }
+  render() { return this.state.err ? <div className="brain-canvas brain-loading">3D isn't available on this device, but the story still plays out beside it.</div> : this.props.children; }
 }
 
-const FLOW = (L: Lens, P: string[], event: string, mem: string) => [
-  { c: '#d56bb4', tag: 'Event happens', say: event, brain: 'Thalamus: the signal arrives and is relayed onward. On its own, it has no meaning yet.' },
-  { c: '#8dd8f7', tag: 'Filtered through your lens', say: L.name, brain: 'Prefrontal cortex: the thinking brain analyzes the event through everything that built your lens.' },
-  { c: '#9ecb3c', tag: 'Stored memories pulled in', say: mem || 'Your emotional memories from step 1 would surface here.', brain: 'Hippocampus: past experiences add context to this moment.' },
-  { c: '#d56bb4', tag: 'The story you tell yourself', say: `“${P[0]}”`, brain: 'Interpretation: your lens and your memories turn an event into a meaning.', q: true },
-  { c: '#fca927', tag: 'Emotional response', say: L.emotion, brain: 'Amygdala: the emotional brain scans for threat or reward and fires fast.' },
-  { c: '#ff7a70', tag: 'Reaction urge', say: L.urge, brain: 'Brainstem and body: you prepare to fight, flee, freeze or appease.' },
-];
+type Screen = 'intro' | 'source' | 'lens' | 'moment' | 'brain' | 'choice' | 'result' | 'save';
 
-const BRAIN_STEPS = [
-  { t: '1 · The event reaches your thalamus', d: 'Sights and sounds arrive at the relay station, which routes them on in milliseconds.', c: '#d56bb4' },
-  { t: '2 · Your prefrontal cortex applies your lens', d: 'The thinking brain reads the event through your upbringing, beliefs, culture and experience.', c: '#8dd8f7' },
-  { t: '3 · Your hippocampus pulls in memories', d: 'Similar past moments light up and send their context to both the thinking brain and the alarm.', c: '#9ecb3c' },
-  { t: '4 · A story forms', d: 'Lens plus memory equals meaning. This is where an ordinary event becomes "they don\'t care" or "I\'m being tested".', c: '#d56bb4' },
-  { t: '5 · Your amygdala fires', d: 'The alarm reacts to the story, not the event, and floods you with emotion before you have fully thought it through.', c: '#fca927' },
-  { t: '6 · Your body gets ready to react', d: 'Heart rate, tension and the urge to act all rise. Without a pause, behavior follows the urge.', c: '#ff7a70' },
-  { t: 'Pause · the thinking brain catches up', d: 'A breath gives your prefrontal cortex time to send calming signals back to the amygdala.', c: '#8dd8f7' },
-  { t: 'Autopilot · amygdala hijack', d: 'The fast road wins. The alarm drives the body straight into reaction and the thinking brain is bypassed.', c: '#ff7a70' },
-  { t: 'With a pause · the thinking brain leads', d: 'Your prefrontal cortex regulates the alarm and chooses the behavior, so the result matches your intent.', c: '#8dd8f7' },
-];
-import { submitLead } from '../lib/ghl';
-import { Reveal, SplitWords, burst } from './ui';
-
-type State = { picked: Record<string, string[]>; scenario: ScenarioKey; example: boolean };
-const EXAMPLE: State = {
-  picked: { up: ['Praise came for achievement'], life: ['Big wins from outworking others', 'Someone dropped the ball and I paid for it'], beliefs: ['Hard work equals value', 'If I want it done right, I do it myself'], env: ['Fast, results-driven workplace'], mem: ['Pride after a hard-won result', 'Being let down when I counted on someone'] },
-  scenario: 'missed', example: true,
+const fade = {
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+  exit: { opacity: 0, y: -12, transition: { duration: 0.2 } },
 };
-const KEY = 'ccm-leadership-lens-v2';
-const load = (): State => { try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s?.picked) return s; } catch { /* storage blocked */ } return JSON.parse(JSON.stringify(EXAMPLE)); };
-
-/** Donut ring showing the lens mix — the "lens" itself. */
-function LensRing({ sc, top }: { sc: Record<LensKey, number>; top?: LensKey }) {
-  const total = ORDER.reduce((n, k) => n + sc[k], 0) || 1;
-  let acc = 0;
-  const R = 70, C = 2 * Math.PI * R;
-  return (
-    <svg viewBox="0 0 200 200" className="lens-ring" role="img" aria-label="Your lens mix">
-      <circle cx="100" cy="100" r={R} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="26" />
-      {ORDER.map((k) => {
-        const f = sc[k] / total, len = f * C, off = acc; acc += len;
-        return <motion.circle key={k} cx="100" cy="100" r={R} fill="none" stroke={LENSES[k].color} strokeWidth={k === top ? 30 : 22} strokeLinecap="butt"
-          transform="rotate(-90 100 100)" initial={false} animate={{ strokeDasharray: `${Math.max(0, len - 2)} ${C}`, strokeDashoffset: -off }} transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }} />;
-      })}
-      <circle cx="100" cy="100" r="50" fill="rgba(255,255,255,.06)" />
-      <text x="100" y="96" textAnchor="middle" fill="#fff6fb" style={{ font: '800 13px Urbanist, sans-serif', letterSpacing: '.12em' }}>YOUR</text>
-      <text x="100" y="114" textAnchor="middle" fill="#fff6fb" style={{ font: '800 13px Urbanist, sans-serif', letterSpacing: '.12em' }}>LENS</text>
-    </svg>
-  );
-}
 
 export function LeadershipLens() {
-  const [st, setSt] = useState<State>(load);
-  const [tab, setTab] = useState(0);
+  const [screen, setScreen] = useState<Screen>('intro');
+  const [src, setSrc] = useState(0);
+  const [picked, setPicked] = useState<Record<string, string[]>>({});
+  const [scenario, setScenario] = useState<ScenarioKey>('missed');
+  const [bStep, setBStep] = useState(0);
+  const [path, setPath] = useState<'auto' | 'pause'>('pause');
+  const [region, setRegion] = useState<Region | null>(null);
   const [form, setForm] = useState({ fn: '', em: '' });
   const [status, setStatus] = useState<null | { ok: boolean; msg: string }>(null);
   const [sending, setSending] = useState(false);
-  const [bStep, setBStep] = useState(0);
-  const [region, setRegion] = useState<Region | null>(null);
-  const [playing, setPlaying] = useState(false);
   const hp = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (!playing) return;
-    setRegion(null);
-    const t = setTimeout(() => { if (bStep >= 8) setPlaying(false); else setBStep(bStep === 6 ? 7 : bStep === 7 ? 8 : bStep + 1); }, 2600);
-    return () => clearTimeout(t);
-  }, [playing, bStep]);
-  useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* ignore */ } }, [st]);
 
   const sc = useMemo(() => {
     const s = Object.fromEntries(ORDER.map((k) => [k, 0])) as Record<LensKey, number>;
-    SOURCES.forEach((src) => src.chips.forEach(([t, k]) => { if ((st.picked[src.id] || []).includes(t)) s[k]++; }));
+    SOURCES.forEach((x) => x.chips.forEach(([t, k]) => { if ((picked[x.id] || []).includes(t)) s[k]++; }));
     return s;
-  }, [st.picked]);
-  const ranked = ORDER.slice().sort((a, b) => sc[b] - sc[a]).filter((k) => sc[k] > 0);
-  const total = Object.values(st.picked).reduce((n, a) => n + a.length, 0);
-  const L = ranked[0] ? LENSES[ranked[0]] : null, L2 = ranked[1] ? LENSES[ranked[1]] : null;
-  const scn = SCENARIOS.find((s) => s.id === st.scenario) || SCENARIOS[0];
-  const P = ranked[0] ? PLAY[ranked[0]][scn.id] : null;
+  }, [picked]);
+  const top = ORDER.slice().sort((a, b) => sc[b] - sc[a])[0];
+  const total = Object.values(picked).reduce((n, a) => n + a.length, 0);
+  const L = LENSES[top];
+  const scn = SCENARIOS.find((s) => s.id === scenario)!;
+  const P = PLAY[top][scenario];
 
-  const toggle = (id: string, t: string) => setSt((s) => {
-    const a = [...(s.picked[id] || [])]; const i = a.indexOf(t); i >= 0 ? a.splice(i, 1) : a.push(t);
-    return { ...s, picked: { ...s.picked, [id]: a }, example: false };
+  const toggle = (id: string, t: string) => setPicked((p) => {
+    const a = [...(p[id] || [])]; const i = a.indexOf(t); i >= 0 ? a.splice(i, 1) : a.push(t);
+    return { ...p, [id]: a };
   });
 
-  const summary = () => {
-    if (!L || !P) return 'My Leadership Lens: not built yet.';
-    return ['MY LEADERSHIP LENS', `Primary lens: ${L.name}${L2 ? ` (blended with ${L2.name})` : ''}`, '', L.desc, '', 'What built my lens:',
-      ...SOURCES.map((x) => (st.picked[x.id] || []).length ? `- ${x.title}: ${(st.picked[x.id] || []).join('; ')}` : null).filter(Boolean),
-      '', `How it serves me: ${L.gift}`, `How it may limit me: ${L.blind}`, `A belief to try on: ${L.reframe}`, '',
-      `Moment: ${scn.label}`, `My story: "${P[0]}"`, `Autopilot: ${P[1]}`, `With a pause: ${P[4]}`, '', 'Awareness creates choice. Choice creates change.'].join('\n');
-  };
+  const MOMENTS = [
+    { t: 'Something happens.', say: scn.label, c: '#d56bb4' },
+    { t: 'Your lens reads it.', say: `Through the eyes of ${L.name.replace('The ', 'the ')}.`, c: '#8dd8f7' },
+    { t: 'Old memories join in.', say: 'Similar moments from your past add their weight.', c: '#9ecb3c' },
+    { t: 'A story forms.', say: `“${P[0]}”`, c: '#d56bb4', q: true },
+    { t: 'Your alarm fires.', say: `${L.emotion}.`, c: '#fca927' },
+    { t: 'Your body wants to react.', say: `${L.urge}.`, c: '#ff7a70' },
+  ];
+
+  const startOver = () => { setPicked({}); setSrc(0); setBStep(0); setStatus(null); setScreen('intro'); };
+
+  const summary = () => ['MY LEADERSHIP LENS', `Primary lens: ${L.name}`, '', L.desc, '',
+    `How it serves me: ${L.gift}`, `Watch out for: ${L.blind}`, `A belief to try on: ${L.reframe}`, '',
+    `Moment: ${scn.label}`, `My story: "${P[0]}"`, `On autopilot: ${P[1]}`, `With a pause: ${P[4]}`, '', 'Awareness creates choice. Choice creates change.'].join('\n');
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -111,151 +72,162 @@ export function LeadershipLens() {
     setSending(true);
     const out = await submitLead({
       type: 'lens', contact: { firstName: form.fn.trim(), email: form.em.trim() },
-      tags: ['leadership-lens-completed', ranked[0] ? `lens-${LENSES[ranked[0]].short.toLowerCase()}` : 'lens-empty', 'interest-eq-masterclass'],
+      tags: ['leadership-lens-completed', `lens-${L.short.toLowerCase()}`, 'interest-eq-masterclass'],
       note: summary(), consent: { email: true }, website: hp.current?.value,
     });
     setSending(false);
-    setStatus(out.ok ? { ok: true, msg: `✓ Sent. Your lens summary is on its way to ${form.em.trim()}.` } : { ok: false, msg: out.error || 'Something went wrong. Try copying your summary instead.' });
+    setStatus(out.ok ? { ok: true, msg: `✓ Sent to ${form.em.trim()}.` } : { ok: false, msg: out.error || 'Something went wrong. Please try again.' });
     if (out.ok) { const b = (e.target as HTMLElement).getBoundingClientRect(); burst(b.left + b.width / 2, b.top, 30); }
   };
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(summary()); setStatus({ ok: true, msg: '✓ Copied. Paste it into your workbook.' }); } catch { setStatus({ ok: false, msg: 'Copy was blocked by your browser.' }); }
-  };
 
-  const STEPS = ['What shaped you?', 'How you see the world', 'See it in your brain'];
+  const showBrain = screen === 'brain' || screen === 'choice' || screen === 'result';
+  const brainStep = screen === 'brain' ? bStep : screen === 'choice' ? 6 : path === 'auto' ? 7 : 8;
+  const srcNow = SOURCES[src];
+  const dots = (n: number, at: number) => <div className="lz-dots" aria-hidden="true">{Array.from({ length: n }, (_, i) => <i key={i} className={i <= at ? 'on' : ''} />)}</div>;
+
   return (
     <section id="lens" className="block lens-sec">
       <div className="wrap">
-        <div className="sec-head">
-          <span className="kicker">Interactive · EQ Masterclass tool</span>
-          <h2 className="h2"><SplitWords text="My Leadership" /> <em style={{ color: 'var(--sky)' }}>Lens</em></h2>
-          <p className="lede">Your past shapes your perspective, and your perspective shapes your leadership. Pick what built your lens, then watch it filter a real workplace moment from event to result.</p>
+        <div className="sec-head center">
+          <span className="kicker">Leadership Lens</span>
+          <h2 className="h2">How do <em>you</em> see the world?</h2>
+          <p className="lede">Your past shapes how you lead. Find your lens in two minutes, then watch it play out inside your brain.</p>
         </div>
-        <Reveal>
-          <div className="glass tool">
-            <div className="lens-steps" role="tablist" aria-label="Leadership Lens steps">
-              {STEPS.map((s, i) => <button key={s} role="tab" aria-selected={tab === i} aria-current={tab === i ? 'step' : undefined} onClick={() => setTab(i)}><i>{i + 1}</i>{s}</button>)}
-            </div>
-            {st.example && (
-              <div className="starter" style={{ marginBottom: '1.2rem' }}>
-                <p>You're looking at an <strong>example lens</strong>. Clear it to build your own. Your picks stay in this browser.</p>
-                <button className="btn sm" onClick={() => { setSt({ picked: {}, scenario: st.scenario, example: false }); setTab(0); }}>Clear and start mine</button>
-              </div>
-            )}
+
+        <div className={`lz${showBrain ? ' with-brain' : ''}`}>
+          {showBrain && (
+            <motion.div className="brain-stage" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
+              <BrainBoundary>
+                <Suspense fallback={<div className="brain-canvas brain-loading">Loading…</div>}>
+                  <Brain3D step={brainStep} selected={region} onSelect={(r) => setRegion(r === region ? null : r)} />
+                </Suspense>
+              </BrainBoundary>
+              <AnimatePresence>
+                {region && (
+                  <motion.div className="brain-info" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} onClick={() => setRegion(null)}>
+                    <b style={{ color: REGIONS[region].color }}>{REGIONS[region].name}</b><p>{REGIONS[region].info}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {!region && <p className="brain-hint">Drag to turn · tap a glowing spot</p>}
+            </motion.div>
+          )}
+
+          <div className="lz-card">
             <AnimatePresence mode="wait">
-              {tab === 0 && (
-                <motion.div key="t0" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                  <div className="sources">
-                    {SOURCES.map((s) => (
-                      <div key={s.id} className="source" style={{ ['--c' as string]: s.c }}>
-                        <h4>{s.title}</h4><p className="hint">{s.hint}</p>
-                        <div className="lchips">{s.chips.map(([t]) => <motion.button key={t} whileTap={{ scale: 0.94 }} className="lchip" aria-pressed={(st.picked[s.id] || []).includes(t)} onClick={() => toggle(s.id, t)}>{t}</motion.button>)}</div>
-                      </div>
+              {screen === 'intro' && (
+                <motion.div key="intro" {...fade} className="lz-screen center">
+                  <div className="lz-lens" aria-hidden="true"><span /><span /><span /></div>
+                  <h3>Every leader looks through a lens.</h3>
+                  <p>It's built from your family, your experiences and the places you've worked. Let's find yours.</p>
+                  <Magnetic><button className="btn" onClick={() => setScreen('source')}>Find my lens <span className="arr">→</span></button></Magnetic>
+                  <small>5 quick taps · nothing to type</small>
+                </motion.div>
+              )}
+
+              {screen === 'source' && (
+                <motion.div key={`src-${src}`} {...fade} className="lz-screen">
+                  {dots(SOURCES.length, src)}
+                  <span className="lz-step">{src + 1} of {SOURCES.length}</span>
+                  <h3>{srcNow.title}</h3>
+                  <p>Tap anything that feels true for you.</p>
+                  <div className="lz-chips">
+                    {srcNow.chips.map(([t]) => (
+                      <motion.button key={t} whileTap={{ scale: 0.95 }} className="lchip" style={{ ['--c' as string]: srcNow.c }} aria-pressed={(picked[srcNow.id] || []).includes(t)} onClick={() => toggle(srcNow.id, t)}>{t}</motion.button>
                     ))}
                   </div>
-                  <div className="qnav"><span style={{ color: 'var(--muted)' }}>{total} picked</span><button className="btn" disabled={!total} onClick={() => setTab(1)}>See my lens <span className="arr">→</span></button></div>
+                  <div className="lz-nav">
+                    <button className="linkbtn" onClick={() => (src ? setSrc(src - 1) : setScreen('intro'))}>← Back</button>
+                    {src < SOURCES.length - 1
+                      ? <button className="btn plum" onClick={() => setSrc(src + 1)}>{(picked[srcNow.id] || []).length ? 'Next' : 'Skip'} <span className="arr">→</span></button>
+                      : <button className="btn" disabled={!total} onClick={() => setScreen('lens')}>Reveal my lens <span className="arr">→</span></button>}
+                  </div>
                 </motion.div>
               )}
-              {tab === 1 && (
-                <motion.div key="t1" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                  {!L ? <p className="lede">Choose a few items in step 1 and your lens will take shape here.</p> : (
-                    <div className="lens-out">
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <span className="label" style={{ marginBottom: 0 }}>Your primary lens</span>
-                        <motion.p key={L.name} className="lens-name" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} style={{ color: L.color }}>{L.name}</motion.p>
-                        <p>{L.desc}</p>
-                        {L2 && <p style={{ color: 'var(--muted)' }}>Blended with <strong style={{ color: L2.color }}>{L2.name}</strong>: {L2.desc.charAt(0).toLowerCase() + L2.desc.slice(1)}</p>}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-                        <LensRing sc={sc} top={ranked[0]} />
-                        <div className="facets" style={{ width: '100%' }}>
-                          <div className="facet gift"><b>How it serves you</b>{L.gift}</div>
-                          <div className="facet blind"><b>How it may limit you</b>{L.blind}</div>
-                          <div className="facet reframe full"><b>A belief to try on</b>{L.reframe}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div className="qnav"><button className="linkbtn" onClick={() => setTab(0)}>← Adjust my picks</button>{L && <button className="btn" onClick={() => setTab(2)}>See it in your brain <span className="arr">→</span></button>}</div>
-                </motion.div>
-              )}
-              {tab === 2 && (
-                <motion.div key="t2" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                  {!L || !P ? <p className="lede">Your lens is empty. Choose a few items in step 1 first.</p> : (
-                    <>
-                      <div className="scen" role="group" aria-label="Choose a situation">
-                        {SCENARIOS.map((s) => <button key={s.id} aria-pressed={st.scenario === s.id} onClick={() => { setSt((x) => ({ ...x, scenario: s.id })); setBStep(0); }}>{s.label}</button>)}
-                      </div>
-                      <div className="brain-layout">
-                        <div className="brain-stage">
-                          <div className="brain-head">
-                            <span className="label" style={{ margin: 0, color: '#d8c3d2' }}>Your brain, right now</span>
-                            <button className="btn sm" onClick={() => setPlaying((p) => !p)} aria-pressed={playing}>{playing ? 'Pause ❚❚' : 'Play the moment ▶'}</button>
-                          </div>
-                          <BrainBoundary>
-                            <Suspense fallback={<div className="brain-canvas brain-loading">Loading your brain…</div>}>
-                              <Brain3D step={bStep} selected={region} onSelect={(r) => setRegion(r === region ? null : r)} />
-                            </Suspense>
-                          </BrainBoundary>
-                          <AnimatePresence mode="wait">
-                            <motion.div key={region ?? `s${bStep}`} className="brain-info" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                              {region ? (
-                                <><b style={{ color: REGIONS[region].color }}>{REGIONS[region].name} · {REGIONS[region].role}</b><p>{REGIONS[region].info}</p></>
-                              ) : (
-                                <><b style={{ color: BRAIN_STEPS[bStep].c }}>{BRAIN_STEPS[bStep].t}</b><p>{BRAIN_STEPS[bStep].d}</p></>
-                              )}
-                            </motion.div>
-                          </AnimatePresence>
-                          <div className="brain-legend">
-                            {(Object.keys(REGIONS) as Region[]).map((k) => (
-                              <button key={k} aria-pressed={region === k} onClick={() => setRegion(region === k ? null : k)} style={{ ['--c' as string]: REGIONS[k].color }}><i />{REGIONS[k].name}</button>
-                            ))}
-                          </div>
-                          <p className="brain-hint">Drag to turn the brain. Tap a glowing region to see what it does.</p>
-                        </div>
 
-                        <div>
-                          <div className="flow">
-                            {FLOW(L, P, scn.label, (st.picked.mem || []).join(' · ')).map((f, i) => (
-                              <button key={i} className={`fstage${bStep === i ? ' on' : ''}`} style={{ ['--sc' as string]: f.c }} onClick={() => { setBStep(i); setRegion(null); setPlaying(false); }} aria-pressed={bStep === i}>
-                                <span className="d">0{i + 1}</span>
-                                <span className="body"><span className="tag">{f.tag}</span><span className={`say${f.q ? ' q' : ''}`}>{f.say}</span><span className="brain">{f.brain}</span></span>
-                              </button>
-                            ))}
-                          </div>
-                          <button className={`pause${bStep === 6 ? ' on' : ''}`} onClick={() => { setBStep(6); setRegion(null); setPlaying(false); }}>
-                            <b aria-hidden="true">II</b><span><strong>Pause.</strong> This is your opportunity to create space between what you feel and what you do.</span>
-                          </button>
-                          <div className="paths">
-                            <button className={`path auto${bStep === 7 ? ' on' : ''}`} onClick={() => { setBStep(7); setRegion(null); setPlaying(false); }}>
-                              <h4>On autopilot · amygdala hijack</h4><span className="st"><b>Behavior</b>{P[1]}</span><span className="st"><b>Result</b>{P[2]}</span>
-                            </button>
-                            <button className={`path chosen${bStep === 8 ? ' on' : ''}`} onClick={() => { setBStep(8); setRegion(null); setPlaying(false); }}>
-                              <h4>With a pause · thinking brain leads</h4><span className="st"><b>Choice</b>{P[3]}</span><span className="st"><b>Behavior</b>{P[4]}</span><span className="st"><b>Result</b>{P[5]}</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="takeaway">
-                        <p>You don't respond to events. You respond to <span>your interpretation</span> of events.</p>
-                        <button className="btn ghost sm" onClick={copy}>Copy my lens summary</button>
-                      </div>
-                      <form className="lens-save" onSubmit={save} noValidate>
-                        <p>Email me my lens summary and the EQ Masterclass workbook tips</p>
-                        <div className="field"><label htmlFor="ll-fn">First name</label><input id="ll-fn" autoComplete="given-name" value={form.fn} onChange={(e) => setForm({ ...form, fn: e.target.value })} /></div>
-                        <div className="field"><label htmlFor="ll-em">Email</label><input id="ll-em" type="email" autoComplete="email" required value={form.em} onChange={(e) => setForm({ ...form, em: e.target.value })} /></div>
-                        <input ref={hp} className="hp" tabIndex={-1} autoComplete="off" aria-hidden="true" name="website" />
-                        <button className="btn" disabled={sending}>{sending ? 'Sending…' : 'Send it'}</button>
-                      </form>
-                    </>
-                  )}
-                  {status && <p className={`status${status.ok ? '' : ' bad'}`} role="status" style={{ marginTop: '.8rem' }}>{status.msg}</p>}
-                  <p style={{ marginTop: '1.4rem', fontFamily: 'var(--display)', fontSize: '.75rem', letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--dim)' }}>Awareness creates choice · Choice creates change</p>
+              {screen === 'lens' && (
+                <motion.div key="lens" {...fade} className="lz-screen center">
+                  <span className="lz-step">Your lens</span>
+                  <motion.h3 className="lz-name" style={{ color: L.color }} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 120, damping: 12, delay: 0.1 }}>{L.name}</motion.h3>
+                  <p>{L.desc.split('. ')[0]}.</p>
+                  <div className="lz-trio">
+                    <div><b>Your gift</b>{L.gift}</div>
+                    <div><b>Watch out for</b>{L.blind}</div>
+                  </div>
+                  <button className="btn" onClick={() => setScreen('moment')}>See it in action <span className="arr">→</span></button>
+                </motion.div>
+              )}
+
+              {screen === 'moment' && (
+                <motion.div key="moment" {...fade} className="lz-screen center">
+                  <span className="lz-step">Pick a moment</span>
+                  <h3>Which of these feels familiar?</h3>
+                  <div className="lz-moments">
+                    {SCENARIOS.map((s) => (
+                      <button key={s.id} onClick={() => { setScenario(s.id); setBStep(0); setScreen('brain'); }}>{s.label}<span aria-hidden="true">→</span></button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {screen === 'brain' && (
+                <motion.div key={`b-${bStep}`} {...fade} className="lz-screen">
+                  {dots(MOMENTS.length, bStep)}
+                  <span className="lz-step" style={{ color: MOMENTS[bStep].c }}>Inside your brain · {bStep + 1} of {MOMENTS.length}</span>
+                  <h3>{MOMENTS[bStep].t}</h3>
+                  <p className={MOMENTS[bStep].q ? 'lz-quote' : 'lz-say'}>{MOMENTS[bStep].say}</p>
+                  <div className="lz-nav">
+                    <button className="linkbtn" onClick={() => (bStep ? setBStep(bStep - 1) : setScreen('moment'))}>← Back</button>
+                    <button className="btn plum" onClick={() => (bStep < MOMENTS.length - 1 ? setBStep(bStep + 1) : setScreen('choice'))}>Next <span className="arr">→</span></button>
+                  </div>
+                </motion.div>
+              )}
+
+              {screen === 'choice' && (
+                <motion.div key="choice" {...fade} className="lz-screen">
+                  <span className="lz-step" style={{ color: '#2b9cc9' }}>The pause</span>
+                  <h3>Now it's your choice.</h3>
+                  <p>A single breath gives your thinking brain time to catch up. What do you do?</p>
+                  <div className="lz-choice">
+                    <button className="auto" onClick={() => { setPath('auto'); setScreen('result'); }}>React right away</button>
+                    <button className="pause" onClick={() => { setPath('pause'); setScreen('result'); }}>Pause first</button>
+                  </div>
+                </motion.div>
+              )}
+
+              {screen === 'result' && (
+                <motion.div key={`r-${path}`} {...fade} className="lz-screen">
+                  <span className="lz-step" style={{ color: path === 'auto' ? '#c0392b' : '#1f7fa8' }}>{path === 'auto' ? 'On autopilot' : 'With a pause'}</span>
+                  <h3>{path === 'auto' ? 'Your alarm takes the wheel.' : 'Your thinking brain leads.'}</h3>
+                  <p className="lz-say">{path === 'auto' ? P[1] : P[4]}</p>
+                  <p className={`lz-outcome ${path}`}><b>What happens:</b> {path === 'auto' ? P[2] : P[5]}</p>
+                  <div className="lz-nav">
+                    <button className="linkbtn" onClick={() => setPath(path === 'auto' ? 'pause' : 'auto')}>See the {path === 'auto' ? 'pause' : 'autopilot'} version</button>
+                    <button className="btn" onClick={() => setScreen('save')}>Finish <span className="arr">→</span></button>
+                  </div>
+                </motion.div>
+              )}
+
+              {screen === 'save' && (
+                <motion.div key="save" {...fade} className="lz-screen center">
+                  <span className="lz-step">Your takeaway</span>
+                  <h3>You don't respond to events. You respond to <em>your story</em> about them.</h3>
+                  <p>A belief to try on: <strong>{L.reframe}</strong></p>
+                  <form className="lz-form" onSubmit={save} noValidate>
+                    <label className="sr-only" htmlFor="ll-fn">First name</label>
+                    <input id="ll-fn" placeholder="First name" autoComplete="given-name" value={form.fn} onChange={(e) => setForm({ ...form, fn: e.target.value })} />
+                    <label className="sr-only" htmlFor="ll-em">Email</label>
+                    <input id="ll-em" type="email" placeholder="Email" autoComplete="email" required value={form.em} onChange={(e) => setForm({ ...form, em: e.target.value })} />
+                    <input ref={hp} className="hp" tabIndex={-1} autoComplete="off" aria-hidden="true" name="website" />
+                    <button className="btn" disabled={sending}>{sending ? 'Sending…' : 'Email me my lens'}</button>
+                  </form>
+                  {status && <p className={`status${status.ok ? '' : ' bad'}`} role="status">{status.msg}</p>}
+                  <button className="linkbtn" onClick={startOver}>↺ Start over</button>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
-        </Reveal>
+        </div>
       </div>
     </section>
   );
