@@ -19,7 +19,7 @@ export function Services() {
         <div className="sec-head">
           <span className="kicker">Chapter two · What we do</span>
           <h2 className="h2"><SplitWords text="Solutions for your business, starting with your team" /></h2>
-          <p className="lede">Built around your people. Delivered virtually, on-site or blended. Tap a service to look closer.</p>
+          <p className="lede">Every engagement is built around your goals and your people, delivered virtually, on-site or as a blend of both. Tap a service to look closer.</p>
         </div>
         <div className="svc-grid">
           {SERVICES.map((s, i) => (

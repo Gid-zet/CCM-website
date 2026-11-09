@@ -50,15 +50,25 @@ const QUAD: Record<Q, [number, number]> = { D: [180, 270], i: [270, 360], S: [0,
 
 export function Assessments() {
   const [q, setQ] = useState<Q>('D');
+  const [pace, setPace] = useState(70); // 0 = cautious & reflective, 100 = fast-paced & outspoken
+  const [warm, setWarm] = useState(35); // 0 = questioning & skeptical, 100 = accepting & warm
+  const [app, setApp] = useState(0);
   const [layer, setLayer] = useState(4);
+  const [sol, setSol] = useState<'personal' | 'team'>('team');
+
+  // Dot position on the DiSC map: fast-paced is up, warm is right.
+  const dx = ((warm - 50) / 50) * (R - 26), dy = (-(pace - 50) / 50) * (R - 26);
+  const likely: Q = pace >= 50 ? (warm >= 50 ? 'i' : 'D') : (warm >= 50 ? 'S' : 'C');
+  const setSliders = (p: number, w: number) => { setPace(p); setWarm(w); };
+  const a = APPS[app];
 
   return (
     <section id="assessments" className="block assess">
       <div className="wrap">
-        <div className="sec-head center">
+        <div className="sec-head">
           <span className="kicker">Chapter four · Assessments</span>
           <h2 className="h2"><SplitWords text="A common language at" /> <em>every level</em></h2>
-          <p className="lede">CCM is an authorized Everything DiSC® and The Five Behaviors® Partner. We run, debrief and follow through on every assessment.</p>
+          <p className="lede">As an authorized Everything DiSC® and The Five Behaviors® Partner since 2020, CCM administers, debriefs and follows through on every assessment. Research shows companies that put employee development first are 2.6 times more likely to outperform the competition.</p>
         </div>
 
         {/* ——— Everything DiSC ——— */}
@@ -67,7 +77,7 @@ export function Assessments() {
             <svg viewBox="0 0 340 340" role="img" aria-label="The Everything DiSC model: Dominance, Influence, Steadiness and Conscientiousness">
               {(Object.keys(DISC) as Q[]).map((k) => (
                 <motion.path key={k} d={arc(...QUAD[k])} fill={DISC[k].c} stroke="#fff" strokeWidth="4" style={{ cursor: 'pointer', transformOrigin: `${CX}px ${CY}px` }}
-                  animate={{ scale: q === k ? 1.05 : 1, opacity: q === k ? 1 : 0.6 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+                  animate={{ scale: q === k ? 1.04 : 1, opacity: q === k || likely === k ? 1 : 0.55 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}
                   onClick={() => setQ(k)} onMouseEnter={() => setQ(k)} tabIndex={0} role="button" aria-label={DISC[k].name} onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setQ(k)} />
               ))}
               <circle cx={CX} cy={CY} r="44" fill="#fff" />
@@ -75,43 +85,83 @@ export function Assessments() {
                 const ang = (DISC[k].angle * Math.PI) / 180;
                 return <text key={k} x={CX + 98 * Math.cos(ang)} y={CY + 98 * Math.sin(ang) + 14} textAnchor="middle" className="disc-letter" pointerEvents="none">{k}</text>;
               })}
-              <text x={CX} y={CY + 7} textAnchor="middle" className="disc-mid">DiSC®</text>
+              <text x={CX} y={CY - 4} textAnchor="middle" className="disc-mid">DiSC®</text>
+              <text x={CX} y={CY + 14} textAnchor="middle" className="disc-mid-s">model</text>
+              <motion.g animate={{ x: dx, y: dy }} transition={{ type: 'spring', stiffness: 120, damping: 14 }}>
+                <circle cx={CX} cy={CY} r="13" fill="#241a21" stroke="#fff" strokeWidth="4" />
+                <circle cx={CX} cy={CY} r="22" fill="none" stroke="#241a21" strokeOpacity=".3" strokeWidth="2"><animate attributeName="r" values="14;26;14" dur="2.4s" repeatCount="indefinite" /></circle>
+              </motion.g>
             </svg>
+            <span className="axis top">Fast-paced &amp; outspoken</span><span className="axis bottom">Cautious &amp; reflective</span>
+            <span className="axis left">Questioning &amp; skeptical</span><span className="axis right">Accepting &amp; warm</span>
           </Reveal>
+
           <div className="disc-side">
-            <span className="label">Everything DiSC® · tap a style</span>
+            <span className="label">Everything DiSC®</span>
+            <h3 className="sub-h">Four styles. One shared language.</h3>
             <AnimatePresence mode="wait">
               <motion.div key={q} className="disc-card" style={{ ['--c' as string]: DISC[q].c }} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
                 <b className="disc-big">{q}</b>
-                <div><h4>{DISC[q].name}</h4><p className="disc-words">{DISC[q].words}</p><p>{DISC[q].motive}</p></div>
+                <div><h4>{DISC[q].name}</h4><p className="disc-words">{DISC[q].words}</p><p>{DISC[q].motive}</p>
+                  <div className="disc-pri">{DISC[q].priorities.map((p) => <span key={p}>{p}</span>)}</div></div>
               </motion.div>
             </AnimatePresence>
-            <p className="disc-note">Four styles, one shared language. Everyone has a blend, and knowing yours makes every conversation easier.</p>
+            <div className="try">
+              <p className="try-h">Try it: where do you naturally lean?</p>
+              <label className="slider"><span>Cautious &amp; reflective</span><input type="range" min="0" max="100" value={pace} onChange={(e) => { setPace(+e.target.value); setQ(+e.target.value >= 50 ? (warm >= 50 ? 'i' : 'D') : (warm >= 50 ? 'S' : 'C')); }} aria-label="Pace: cautious to fast-paced" /><span>Fast-paced &amp; outspoken</span></label>
+              <label className="slider"><span>Questioning &amp; skeptical</span><input type="range" min="0" max="100" value={warm} onChange={(e) => { setWarm(+e.target.value); setQ(pace >= 50 ? (+e.target.value >= 50 ? 'i' : 'D') : (+e.target.value >= 50 ? 'S' : 'C')); }} aria-label="Focus: skeptical to warm" /><span>Accepting &amp; warm</span></label>
+              <p className="try-out">You may lean toward <strong style={{ color: DISC[likely].c }}>{DISC[likely].name}</strong>. <button className="linkbtn" onClick={() => { setSliders(50 + (Math.random() - 0.5) * 90, 50 + (Math.random() - 0.5) * 90); }}>Surprise me ↻</button></p>
+              <p className="fine" style={{ color: 'var(--dim)' }}>A quick illustration of the model, not an assessment. Your full Everything DiSC® profile is far richer.</p>
+            </div>
           </div>
         </div>
 
-        <div className="apps-grid">
-          {APPS.map((x, i) => (
-            <Reveal key={x.k} delay={i * 0.05}>
-              <a className="app-tile" href={x.pdf} target="_blank" rel="noopener">
-                <b>{x.t}</b><span>{x.tag}</span><small>View sample ↗</small>
-              </a>
-            </Reveal>
-          ))}
+        <div className="apps">
+          <div className="apps-tabs" role="tablist" aria-label="Everything DiSC applications">
+            {APPS.map((x, i) => (
+              <button key={x.k} role="tab" aria-selected={app === i} onClick={() => setApp(i)}>
+                {app === i && <motion.span layoutId="app-pill" className="pill" transition={{ type: 'spring', stiffness: 320, damping: 30 }} />}
+                <span>{x.t}</span>
+              </button>
+            ))}
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.div key={a.k} className="app-body glass" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} transition={{ duration: 0.35 }}>
+              <div>
+                <span className="label">Everything DiSC® {a.t}</span>
+                <h4>{a.tag}</h4>
+                <p>{a.d}</p>
+              </div>
+              <div>
+                <span className="label">The profile focuses on</span>
+                <ul>{a.f.map((x) => <li key={x}>{x}</li>)}</ul>
+                <div className="acts"><a className="btn plum sm" href="#contact" onClick={onAnchor}>Enroll now <span className="arr">→</span></a><a className="btn ghost sm" href={a.pdf} target="_blank" rel="noopener">Download sample</a></div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* ——— The Five Behaviors ——— */}
         <div className="five">
           <div className="five-copy">
             <span className="label">The Five Behaviors®</span>
-            <h3 className="sub-h">Build a truly cohesive team</h3>
-            <p className="lede">Each behavior is the foundation for the next. Tap a layer.</p>
+            <h3 className="sub-h">Activate your team's potential</h3>
+            <p className="lede">Teams change as the workplace evolves. The Five Behaviors® helps people build the skills to collaborate well wherever they work, so the whole team achieves results through cohesive teamwork.</p>
             <AnimatePresence mode="wait">
               <motion.div key={layer} className="five-card" style={{ ['--c' as string]: FIVE[layer].c }} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
                 <b>{FIVE[layer].t}</b><p>{FIVE[layer].d}</p>
               </motion.div>
             </AnimatePresence>
-            <p className="disc-note">For individuals on any team (up to 30) or intact teams of 5–12. <a href="#contact" onClick={onAnchor}>Ask which fits →</a></p>
+            <div className="sols" role="tablist" aria-label="Five Behaviors solutions">
+              {([['personal', 'Personal Development', 'Build a culture of teamwork', 'Anyone', 'Up to 30', 'No requirements', 'https://www.cummingscm.com/s/Sample-5Bs-Personal-Development-Profile-2.pdf'],
+                ['team', 'Team Development', 'Develop a cohesive intact team', 'Intact teams', '5–12', '6-week minimum tenure', 'https://www.cummingscm.com/s/Sample-5Bs-Team-Profile-2.pdf']] as const).map(([k, t, st, who, n, len, pdf]) => (
+                <button key={k} role="tab" aria-selected={sol === k} className="sol" onClick={() => setSol(k)}>
+                  <b>{t}</b><small>{st}</small>
+                  <dl><div><dt>Who</dt><dd>{who}</dd></div><div><dt>People</dt><dd>{n}</dd></div><div><dt>Team tenure</dt><dd>{len}</dd></div></dl>
+                  {sol === k && <a className="sol-link" href={pdf} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()}>Download sample →</a>}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="pyramid">
             <svg viewBox="0 0 400 352" role="img" aria-label="The Five Behaviors pyramid: Trust at the base, then Conflict, Commitment, Accountability and Results at the top">
@@ -130,6 +180,7 @@ export function Assessments() {
                 );
               })}
             </svg>
+            <p className="fine" style={{ textAlign: 'center', color: 'var(--dim)' }}>Each behavior serves as a foundation for the next. Tap a layer.</p>
           </div>
         </div>
       </div>

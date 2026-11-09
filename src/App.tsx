@@ -5,7 +5,7 @@ import { Services } from './components/Services';
 import { Grit } from './components/Grit';
 import { GrowthCompass } from './components/GrowthCompass';
 import { LeadershipLens } from './components/LeadershipLens';
-import { Contact, Footer, Government, Impact, Insights, Testimonials } from './components/Sections';
+import { Contact, Footer, Government, HowWeWork, Impact, Insights, Testimonials } from './components/Sections';
 import { useSmoothScroll } from './components/ui';
 import { Assessments } from './components/Assessments';
 
@@ -25,6 +25,7 @@ export default function App() {
         <Assessments />
         <GrowthCompass />
         <LeadershipLens />
+        <HowWeWork />
         <Testimonials />
         <Government />
         <Insights />

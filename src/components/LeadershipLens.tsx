@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Component, Suspense, lazy, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { LENSES, ORDER, PLAY, SCENARIOS, SOURCES, type LensKey, type ScenarioKey } from '../data/lens';
 import { submitLead } from '../lib/ghl';
 import { REGIONS, type Region } from './brainData';
@@ -34,6 +34,13 @@ export function LeadershipLens() {
   const [status, setStatus] = useState<null | { ok: boolean; msg: string }>(null);
   const [sending, setSending] = useState(false);
   const hp = useRef<HTMLInputElement>(null);
+  const [idle, setIdle] = useState(0);
+  const attract = screen === 'intro' || screen === 'source' || screen === 'lens' || screen === 'moment' || screen === 'save';
+  useEffect(() => {
+    if (!attract) return;
+    const t = setInterval(() => setIdle((i) => (i + 1) % 9), screen === 'intro' ? 1700 : 2800);
+    return () => clearInterval(t);
+  }, [attract, screen]);
 
   const sc = useMemo(() => {
     const s = Object.fromEntries(ORDER.map((k) => [k, 0])) as Record<LensKey, number>;
@@ -80,23 +87,32 @@ export function LeadershipLens() {
     if (out.ok) { const b = (e.target as HTMLElement).getBoundingClientRect(); burst(b.left + b.width / 2, b.top, 30); }
   };
 
-  const showBrain = screen === 'brain' || screen === 'choice' || screen === 'result';
-  const brainStep = screen === 'brain' ? bStep : screen === 'choice' ? 6 : path === 'auto' ? 7 : 8;
+  const brainStep = attract ? idle : screen === 'brain' ? bStep : screen === 'choice' ? 6 : path === 'auto' ? 7 : 8;
   const srcNow = SOURCES[src];
   const dots = (n: number, at: number) => <div className="lz-dots" aria-hidden="true">{Array.from({ length: n }, (_, i) => <i key={i} className={i <= at ? 'on' : ''} />)}</div>;
 
   return (
-    <section id="lens" className="block lens-sec">
+    <section id="lens" className="block lens-sec dark lz-sec">
       <div className="wrap">
         <div className="sec-head center">
-          <span className="kicker">Leadership Lens</span>
-          <h2 className="h2">How do <em>you</em> see the world?</h2>
-          <p className="lede">Your past shapes how you lead. Find your lens in two minutes, then watch it play out inside your brain.</p>
+          <span className="kicker">Free · 2-minute test</span>
+          <h2 className="h2">What's your <span className="grad-text">Leadership Lens</span>?</h2>
+          <p className="lede">Your past quietly shapes how you lead. Find your lens, then watch it play out inside your brain.</p>
         </div>
 
-        <div className={`lz${showBrain ? ' with-brain' : ''}`}>
-          {showBrain && (
-            <motion.div className="brain-stage" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}>
+        <div className="lz with-brain">
+          {(
+            <motion.div className="brain-stage lz-brain" initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}>
+              {screen === 'intro' && (
+                <div className="lz-floaters" aria-hidden="true">
+                  {(['pfc', 'amygdala', 'hippocampus', 'thalamus'] as Region[]).map((r, i) => (
+                    <motion.span key={r} className={`lz-float f${i}`} style={{ ['--c' as string]: REGIONS[r].color }}
+                      animate={{ y: [0, -8, 0] }} transition={{ duration: 3 + i * 0.4, repeat: Infinity, ease: 'easeInOut', delay: i * 0.3 }}>
+                      <i />{REGIONS[r].name} <small>{REGIONS[r].role}</small>
+                    </motion.span>
+                  ))}
+                </div>
+              )}
               <BrainBoundary>
                 <Suspense fallback={<div className="brain-canvas brain-loading">Loading…</div>}>
                   <Brain3D step={brainStep} selected={region} onSelect={(r) => setRegion(r === region ? null : r)} />
@@ -116,12 +132,19 @@ export function LeadershipLens() {
           <div className="lz-card">
             <AnimatePresence mode="wait">
               {screen === 'intro' && (
-                <motion.div key="intro" {...fade} className="lz-screen center">
-                  <div className="lz-lens" aria-hidden="true"><span /><span /><span /></div>
-                  <h3>Every leader looks through a lens.</h3>
-                  <p>It's built from your family, your experiences and the places you've worked. Let's find yours.</p>
-                  <Magnetic><button className="btn" onClick={() => setScreen('source')}>Find my lens <span className="arr">→</span></button></Magnetic>
-                  <small>5 quick taps · nothing to type</small>
+                <motion.div key="intro" {...fade} className="lz-screen">
+                  <span className="lz-step">Which one are you?</span>
+                  <h3>Six lenses. <em>One is yours.</em></h3>
+                  <div className="lz-teasers" aria-hidden="true">
+                    {ORDER.map((k, i) => (
+                      <motion.span key={k} style={{ ['--c' as string]: LENSES[k].color }} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 + i * 0.08 }}>
+                        {LENSES[k].short}
+                      </motion.span>
+                    ))}
+                  </div>
+                  <p>Your family, your experiences and the places you've worked built a lens you lead through every day. Find yours, then see what it does to your brain under pressure.</p>
+                  <div className="lz-meta"><span>⏱ 2 minutes</span><span>👆 Just tap</span><span>🧠 See it in 3D</span></div>
+                  <Magnetic><button className="btn lz-cta" onClick={() => setScreen('source')}>Take the test <span className="arr">→</span></button></Magnetic>
                 </motion.div>
               )}
 

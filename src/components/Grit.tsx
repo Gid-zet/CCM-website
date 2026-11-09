@@ -58,22 +58,23 @@ function Panels() {
               </motion.div>
             ))}
           </div>
-          <p className="grit-tag">A leadership journey, not another training program. Scroll to travel it.</p>
+          <p className="grit-tag">GRIT is a developmental journey, not another training program. Keep scrolling and we'll take you through it, stop by stop.</p>
           <span className="jp-go" aria-hidden="true">Scroll to begin the journey <i>→</i></span>
         </div>
       </article>
 
       <Stop n="01" kicker="Assess" title={<>Start with a clear <em>picture</em></>}>
-        <p>Every leader gets an honest starting point.</p>
+        <p>We listen to leaders and sponsors, then run diagnostics so every leader has an honest starting point.</p>
         <div className="jp-chips">
           <a href="#assessments" onClick={onAnchor} className="jp-chip" style={{ ['--c' as string]: '#fca927' }}>Everything DiSC®</a>
           <a href="#assessments" onClick={onAnchor} className="jp-chip" style={{ ['--c' as string]: '#9ecb3c' }}>The Five Behaviors®</a>
           <span className="jp-chip" style={{ ['--c' as string]: '#8dd8f7' }}>360 assessment</span>
         </div>
+        <p className="jp-note">Before kickoff we agree with your sponsor on what success looks like and how we will report on it.</p>
       </Stop>
 
       <Stop n="02" kicker="Design" title={<>Built around <em>your</em> leaders</>}>
-        <p>Pick the level that fits. Tap one.</p>
+        <p>We align the program to your goals, roles and real work, and pick the level that fits.</p>
         <div className="mini-stairs" role="group" aria-label="GRIT programs">
           {GRIT.programs.map((g, i) => (
             <button key={g.t} aria-pressed={prog === i} onClick={() => setProg(i)} style={{ height: `${g.h}%` }}>
@@ -81,37 +82,38 @@ function Panels() {
             </button>
           ))}
         </div>
-        <p className="jp-note"><strong>{GRIT.programs[prog].t}</strong> · {GRIT.programs[prog].d}</p>
+        <p className="jp-note"><strong>{GRIT.programs[prog].t}:</strong> {GRIT.programs[prog].d}. Plus <strong>GRIT Women</strong>, for women advancing into greater responsibility.</p>
       </Stop>
 
       <Stop n="03" kicker="Launch" title={<>Kick off with <em>purpose</em></>}>
-        <p>Sponsors open it. A peer cohort forms that learns together and holds each other accountable.</p>
+        <p>Sponsors open the program so leaders know why it matters. Peers form a cohort that learns together and holds each other accountable.</p>
+        <ul className="jp-list"><li>Sponsor kickoff</li><li>Peer cohort formed</li><li>Senior leaders kept informed throughout</li></ul>
       </Stop>
 
       <Stop n="04" kicker="Learn" title={<>Four stages that <em>build</em></>} wide>
-        <p>Practice on real challenges, one stage at a time.</p>
+        <p>Facilitated, practice-based sessions on live challenges, moving through every stage at the depth each role requires.</p>
         <div className="jp-stages">
           {GRIT.stages.map((s, i) => (
             <motion.div key={s.n} className="jp-stage" style={{ ['--c' as string]: s.c }} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.5 }} transition={{ delay: 0.15 + i * 0.12 }}>
-              <span>{s.n}</span><b>{s.t}</b>
+              <span>{s.n}</span><b>{s.t}</b><small>{s.d}</small>
             </motion.div>
           ))}
         </div>
       </Stop>
 
       <Stop n="05" kicker="Coach" title={<>Learning that <em>keeps moving</em></>}>
-        <p>Coaching between sessions turns insight into habit.</p>
+        <p>Group and one-on-one coaching between sessions turns insight into habit. This is where behavior actually changes.</p>
         <div className="jp-bubbles" aria-hidden="true">
           <span>"What will you try this week?"</span><span>"What got in the way?"</span><span>"What did you notice?"</span>
         </div>
       </Stop>
 
       <Stop n="06" kicker="Sustain" title={<>A capstone and <em>measured</em> results</>} wide>
-        <p>A capstone on real work, measured all the way to business results.</p>
+        <p>Leaders apply what they learned to a real business challenge. Most providers stop at level 1. GRIT is measured all the way to level 4.</p>
         <div className="jp-levels">
           {MEASURE.map(([l, t, d], i) => (
             <motion.div key={l} className="jp-level" initial={{ opacity: 0, scaleY: 0.4 }} whileInView={{ opacity: 1, scaleY: 1 }} viewport={{ amount: 0.5 }} transition={{ delay: 0.1 + i * 0.12 }} style={{ ['--h' as string]: `${55 + i * 15}%` }}>
-              <small>{l}</small><b>{t}</b>
+              <small>{l}</small><b>{t}</b><span>{d}</span>
             </motion.div>
           ))}
         </div>
@@ -122,7 +124,7 @@ function Panels() {
           <div className="finale-mark"><Pinwheel /></div>
           <span className="kicker">Destination</span>
           <h3 className="jp-t">Transformation.</h3>
-          <p>One partner, every step of the way.</p>
+          <p>One accountable partner through every step. We stay through coaching and measurement.</p>
           <Magnetic><a className="btn" href="#contact" onClick={onAnchor}>Bring GRIT to your leaders <span className="arr">→</span></a></Magnetic>
         </motion.div>
       </article>
@@ -174,6 +176,18 @@ export function Grit() {
         <div className="journey-vertical wrap"><Panels /></div>
       )}
 
+      <div className="wrap" style={{ paddingBottom: 'clamp(4rem,9vw,7rem)', paddingTop: horizontal ? 'clamp(3rem,6vw,5rem)' : 0 }}>
+        <div className="sec-head" style={{ marginBottom: '2rem' }}>
+          <span className="kicker">Why CCM for GRIT</span>
+        </div>
+        <div className="why4">
+          {WHY.map(([t, d], i) => (
+            <Reveal key={t} delay={i * 0.08}><div className="glass why-card">
+              <b>{i + 1}</b><h4>{t}</h4><p>{d}</p>
+            </div></Reveal>
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
