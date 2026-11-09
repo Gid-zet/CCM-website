@@ -89,7 +89,7 @@ export function Magnetic({ children, strength = 0.35 }: { children: ReactNode; s
     x.set((e.clientX - (r.left + r.width / 2)) * strength); y.set((e.clientY - (r.top + r.height / 2)) * strength);
   };
   return (
-    <motion.span ref={ref} style={{ x, y, display: 'inline-flex' }} onPointerMove={move} onPointerLeave={() => { x.set(0); y.set(0); }} data-cursor="big">
+    <motion.span ref={ref} style={{ x, y, display: 'inline-flex' }} onPointerMove={move} onPointerLeave={() => { x.set(0); y.set(0); }}>
       {children}
     </motion.span>
   );
@@ -133,36 +133,6 @@ export function CountUp({ to, suffix = '', duration = 2 }: { to: number; suffix?
     return () => c.stop();
   }, [inView, to, duration, reduce]);
   return <span ref={ref}>{v.toLocaleString('en-US')}{suffix}</span>;
-}
-
-/* ——— Custom cursor ——— */
-export function Cursor() {
-  const x = useSpring(-100, { stiffness: 500, damping: 40 }), y = useSpring(-100, { stiffness: 500, damping: 40 });
-  const [big, setBig] = useState(false);
-  useEffect(() => {
-    if (!matchMedia('(pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const mv = (e: globalThis.PointerEvent) => {
-      x.set(e.clientX); y.set(e.clientY);
-      const t = e.target as HTMLElement;
-      setBig(!!t.closest?.('[data-cursor="big"], a, button'));
-    };
-    addEventListener('pointermove', mv);
-    return () => removeEventListener('pointermove', mv);
-  }, [x, y]);
-  return <motion.div className={`cursor${big ? ' big' : ''}`} style={{ x, y }} aria-hidden="true" />;
-}
-
-/* ——— SVG filter that gives .glass.refract its liquid lens distortion (Chromium) ——— */
-export function LiquidFilter() {
-  return (
-    <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
-      <filter id="liquid" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="7" result="n" />
-        <feGaussianBlur in="n" stdDeviation="2" result="nb" />
-        <feDisplacementMap in="SourceGraphic" in2="nb" scale="38" xChannelSelector="R" yChannelSelector="G" />
-      </filter>
-    </svg>
-  );
 }
 
 /* ——— Petal confetti burst (fun!) ——— */

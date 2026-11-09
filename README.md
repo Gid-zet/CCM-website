@@ -1,6 +1,6 @@
 # Cummings Consulting & Management — website
 
-A single-page, highly interactive site for CCM built with **React 18 + TypeScript + Vite**, **Framer Motion** (scroll-linked storytelling, parallax, layout morphs) and **Lenis** (smooth scroll). Liquid-glass surfaces, a scroll-driven pinwheel that spins faster the faster you scroll, petal-confetti moments, and the brand palette sampled from the CCM logo.
+A single-page, highly interactive site for CCM built with **React 18 + TypeScript + Vite**, **Framer Motion** (scroll-linked storytelling, parallax, layout morphs), **Lenis** (smooth scroll) and **three.js / React Three Fiber** (the 3D brain). Light, white-led design with plum bands for drama, frosted-glass surfaces, a pinwheel that spins faster the faster you scroll, and the brand palette sampled from the CCM logo.
 
 ## What's on the page
 
@@ -10,9 +10,10 @@ A single-page, highly interactive site for CCM built with **React 18 + TypeScrip
 | Chapter one · The challenge | Pinned scroll story: four leadership challenges stack in as you scroll |
 | Chapter two · Services | Tilt + spotlight glass cards that morph into a detail sheet |
 | Impact | Count-up stats |
-| Chapter three · GRIT Leadership Series™ | Pinned sequence where G-R-I-T assemble, framework stages, interactive program staircase, GRIT Women, 6-step journey, why CCM |
+| Chapter three · GRIT Leadership Series™ | Scroll-driven journey: vertical scroll travels sideways along a road (Assess → Design → Launch → Learn → Coach → Sustain → Transformation) with a pinwheel traveler; stacks vertically on phones |
+| Chapter four · Assessments | Interactive Everything DiSC® model with "where do you lean" sliders, the six DiSC applications with sample downloads, and a Five Behaviors® pyramid with Personal vs Team Development |
 | **Growth Compass** (lead magnet) | 10-question assessment, gated results, six profiles, recommended services — **sent to GoHighLevel** |
-| **Leadership Lens** | 3-step EQ tool (what shaped you → your lens → run a moment through it) with "email me my lens" — **sent to GoHighLevel** |
+| **Leadership Lens** | 3-step EQ tool (what shaped you → your lens → see it in your brain). Step 3 is an interactive 3D brain: drag to rotate, tap regions, or press Play to watch the thalamus, prefrontal cortex, hippocampus, amygdala and brainstem light up with neural pulses for each moment, then compare amygdala hijack vs the pause. "Email me my lens" is **sent to GoHighLevel** |
 | How we work, Testimonials, Government | Format switcher, draggable testimonial card, capability snapshot |
 | Insights + newsletter | **Newsletter signup → GoHighLevel** |
 | Contact | **Message form → GoHighLevel**, or the GHL booking calendar embedded |

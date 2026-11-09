@@ -6,16 +6,14 @@ import { Grit } from './components/Grit';
 import { GrowthCompass } from './components/GrowthCompass';
 import { LeadershipLens } from './components/LeadershipLens';
 import { Contact, Footer, Government, HowWeWork, Impact, Insights, Testimonials } from './components/Sections';
-import { Cursor, LiquidFilter, useSmoothScroll } from './components/ui';
+import { useSmoothScroll } from './components/ui';
+import { Assessments } from './components/Assessments';
 
 export default function App() {
   useSmoothScroll();
   return (
     <>
       <a className="skip" href="#main">Skip to content</a>
-      <LiquidFilter />
-      <div className="grain" aria-hidden="true" />
-      <Cursor />
       <Nav />
       <main id="main">
         <Hero />
@@ -24,6 +22,7 @@ export default function App() {
         <Services />
         <Impact />
         <Grit />
+        <Assessments />
         <GrowthCompass />
         <LeadershipLens />
         <HowWeWork />

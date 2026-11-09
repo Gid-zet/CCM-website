@@ -28,7 +28,7 @@ function DeckCard({ i, p, c }: { i: number; p: MotionValue<number>; c: (typeof C
   const dim = useTransform(p, [end - 0.05, end + 0.2], [1, i === n - 1 ? 1 : 0.45]);
   const rot = useTransform(p, [start - 0.18, start], i === 0 ? [0, 0] : [6, 0]);
   return (
-    <motion.article className="deck-card glass" style={{ y, scale, opacity: dim, rotate: rot, zIndex: i, ['--c' as string]: c.c }}>
+    <motion.article className="deck-card glass" style={{ y, scale, opacity: dim, rotate: rot, zIndex: i, ['--c' as string]: c.c, ['--i' as string]: i }}>
       <span className="bar" /><span className="blob" />
       <span className="num" style={{ color: c.c }}>0{i + 1}</span>
       <h3>{c.t}</h3>
@@ -56,7 +56,7 @@ export function Story() {
   }
 
   return (
-    <section id="story" ref={ref} className="story" aria-label="The challenge">
+    <section id="story" ref={ref} className="story tint" aria-label="The challenge">
       <div className="story-pin">
         <div className="wrap story-grid">
           <div>

@@ -7,7 +7,7 @@ import { CountUp, Magnetic, Pinwheel, Reveal, SplitWords, Tilt, burst, onAnchor 
 /* ——— Impact ——— */
 export function Impact() {
   return (
-    <section className="block" aria-labelledby="impact-h">
+    <section className="block impact dark" aria-labelledby="impact-h">
       <div className="wrap">
         <div className="sec-head">
           <span className="kicker">Our impact</span>
@@ -118,7 +118,7 @@ export function Testimonials() {
   useEffect(() => { if (reduce || paused) return; const t = setTimeout(() => go(i + 1), 7000); return () => clearTimeout(t); });
   const end = (_: unknown, info: PanInfo) => { if (info.offset.x < -60) go(i + 1); else if (info.offset.x > 60) go(i - 1); };
   return (
-    <section className="block" aria-labelledby="tq-h">
+    <section className="block tint" aria-labelledby="tq-h">
       <div className="wrap tq">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
           <span className="kicker">What participants say</span>
@@ -126,7 +126,7 @@ export function Testimonials() {
           <div className="score">
             <div className="ring">
               <svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,.1)" strokeWidth="3" />
-                <motion.circle cx="18" cy="18" r="15.9" fill="none" stroke="#fca927" strokeWidth="3" strokeLinecap="round" pathLength={100} initial={{ strokeDasharray: '0 100' }} whileInView={{ strokeDasharray: '98 100' }} viewport={{ once: true }} transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }} /></svg>
+                <motion.circle cx="18" cy="18" r="15.9" fill="none" stroke="#88326f" strokeWidth="3" strokeLinecap="round" pathLength={100} initial={{ strokeDasharray: '0 100' }} whileInView={{ strokeDasharray: '98 100' }} viewport={{ once: true }} transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }} /></svg>
               <b><CountUp to={98} suffix="%" /></b>
             </div>
             <p>of participants rate their CCM experience positively, across more than 20,000 people trained.</p>
@@ -134,7 +134,7 @@ export function Testimonials() {
           <div className="qdots">{QUOTES.map((x, k) => <button key={k} aria-label={`Show testimonial ${k + 1}`} aria-pressed={k === i} style={{ ['--c' as string]: x.c }} onClick={() => go(k)} />)}</div>
         </div>
         <motion.figure className="qcard" style={{ ['--c' as string]: q.c, ['--fg' as string]: q.fg, margin: 0 }} drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.25} onDragEnd={end}
-          onPointerEnter={() => setPaused(true)} onPointerLeave={() => setPaused(false)} data-cursor="big">
+          onPointerEnter={() => setPaused(true)} onPointerLeave={() => setPaused(false)}>
           <div className="qnav2"><span>{i + 1} / {QUOTES.length}</span><button onClick={() => go(i - 1)} aria-label="Previous testimonial">←</button><button onClick={() => go(i + 1)} aria-label="Next testimonial">→</button></div>
           <span className="glyph" aria-hidden="true">“</span>
           <AnimatePresence mode="wait" custom={dir}>
@@ -152,7 +152,7 @@ export function Testimonials() {
 /* ——— Government ——— */
 export function Government() {
   return (
-    <section id="government" className="block" aria-labelledby="gov-h" style={{ background: 'linear-gradient(160deg, rgba(74,26,61,.55), transparent 70%)' }}>
+    <section id="government" className="block dark" aria-labelledby="gov-h">
       <div className="wrap gov">
         <div>
           <span className="kicker">Government &amp; procurement</span>
@@ -204,7 +204,7 @@ export function Insights() {
     if (r.ok) { const b = (e.target as HTMLElement).getBoundingClientRect(); burst(b.left + b.width / 2, b.top + b.height / 2, 30); }
   };
   return (
-    <section id="insights" className="block" aria-labelledby="ins-h">
+    <section id="insights" className="block tint" aria-labelledby="ins-h">
       <div className="wrap">
         <div className="sec-head">
           <span className="kicker">Insights</span>
@@ -318,7 +318,7 @@ export function Contact() {
 /* ——— Footer ——— */
 export function Footer() {
   return (
-    <footer className="foot">
+    <footer className="foot dark">
       <div className="wrap">
         <Reveal><p className="foot-big">We embrace<br /><em className="grad-text">learning.</em></p></Reveal>
         <div className="foot-grid">
@@ -326,7 +326,7 @@ export function Footer() {
             <span className="foot-logo"><img src="/ccm-logo.jpg" alt="Cummings Consulting & Management" width="156" height="52" /></span>
             <p style={{ color: 'var(--muted)', marginTop: '1rem', maxWidth: '20rem' }}>Creating solutions for your business, starting with your team. Alpharetta, Georgia.</p>
           </div>
-          <div><h4>Explore</h4><ul>{[['story', 'Our story'], ['services', 'Services'], ['grit', 'GRIT Leadership Series'], ['government', 'Government']].map(([h, l]) => <li key={h}><a href={`#${h}`} onClick={onAnchor}>{l}</a></li>)}</ul></div>
+          <div><h4>Explore</h4><ul>{[['services', 'Services'], ['grit', 'GRIT Leadership Series'], ['assessments', 'Everything DiSC® & Five Behaviors®'], ['government', 'Government']].map(([h, l]) => <li key={h}><a href={`#${h}`} onClick={onAnchor}>{l}</a></li>)}</ul></div>
           <div><h4>Tools</h4><ul>{[['compass', 'Growth Compass'], ['lens', 'Leadership Lens'], ['insights', 'Newsletter']].map(([h, l]) => <li key={h}><a href={`#${h}`} onClick={onAnchor}>{l}</a></li>)}<li><a href={EQ_URL} target="_blank" rel="noopener">EQ Masterclass</a></li></ul></div>
           <div><h4>Connect</h4><ul><li><a href={BOOKING_URL} target="_blank" rel="noopener">Book a strategy call</a></li><li><a href={LINKS.linkedin} target="_blank" rel="noopener">LinkedIn</a></li><li><a href={LINKS.instagram} target="_blank" rel="noopener">Instagram</a></li><li><a href={LINKS.facebook} target="_blank" rel="noopener">Facebook</a></li></ul></div>
         </div>

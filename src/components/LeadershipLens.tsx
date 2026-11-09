@@ -1,6 +1,37 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { LENSES, ORDER, PLAY, SCENARIOS, SOURCES, type LensKey, type ScenarioKey } from '../data/lens';
+import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { REGIONS, type Region } from './brainData';
+import { LENSES, ORDER, PLAY, SCENARIOS, SOURCES, type Lens, type LensKey, type ScenarioKey } from '../data/lens';
+
+const Brain3D = lazy(() => import('./Brain3D'));
+
+/** If WebGL is unavailable, keep the rest of the tool working. */
+class BrainBoundary extends Component<{ children: ReactNode }, { err: boolean }> {
+  state = { err: false };
+  static getDerivedStateFromError() { return { err: true }; }
+  render() { return this.state.err ? <div className="brain-canvas brain-loading">3D isn't available on this device, but the flow beside it still shows each step.</div> : this.props.children; }
+}
+
+const FLOW = (L: Lens, P: string[], event: string, mem: string) => [
+  { c: '#d56bb4', tag: 'Event happens', say: event, brain: 'Thalamus: the signal arrives and is relayed onward. On its own, it has no meaning yet.' },
+  { c: '#8dd8f7', tag: 'Filtered through your lens', say: L.name, brain: 'Prefrontal cortex: the thinking brain analyzes the event through everything that built your lens.' },
+  { c: '#9ecb3c', tag: 'Stored memories pulled in', say: mem || 'Your emotional memories from step 1 would surface here.', brain: 'Hippocampus: past experiences add context to this moment.' },
+  { c: '#d56bb4', tag: 'The story you tell yourself', say: `“${P[0]}”`, brain: 'Interpretation: your lens and your memories turn an event into a meaning.', q: true },
+  { c: '#fca927', tag: 'Emotional response', say: L.emotion, brain: 'Amygdala: the emotional brain scans for threat or reward and fires fast.' },
+  { c: '#ff7a70', tag: 'Reaction urge', say: L.urge, brain: 'Brainstem and body: you prepare to fight, flee, freeze or appease.' },
+];
+
+const BRAIN_STEPS = [
+  { t: '1 · The event reaches your thalamus', d: 'Sights and sounds arrive at the relay station, which routes them on in milliseconds.', c: '#d56bb4' },
+  { t: '2 · Your prefrontal cortex applies your lens', d: 'The thinking brain reads the event through your upbringing, beliefs, culture and experience.', c: '#8dd8f7' },
+  { t: '3 · Your hippocampus pulls in memories', d: 'Similar past moments light up and send their context to both the thinking brain and the alarm.', c: '#9ecb3c' },
+  { t: '4 · A story forms', d: 'Lens plus memory equals meaning. This is where an ordinary event becomes "they don\'t care" or "I\'m being tested".', c: '#d56bb4' },
+  { t: '5 · Your amygdala fires', d: 'The alarm reacts to the story, not the event, and floods you with emotion before you have fully thought it through.', c: '#fca927' },
+  { t: '6 · Your body gets ready to react', d: 'Heart rate, tension and the urge to act all rise. Without a pause, behavior follows the urge.', c: '#ff7a70' },
+  { t: 'Pause · the thinking brain catches up', d: 'A breath gives your prefrontal cortex time to send calming signals back to the amygdala.', c: '#8dd8f7' },
+  { t: 'Autopilot · amygdala hijack', d: 'The fast road wins. The alarm drives the body straight into reaction and the thinking brain is bypassed.', c: '#ff7a70' },
+  { t: 'With a pause · the thinking brain leads', d: 'Your prefrontal cortex regulates the alarm and chooses the behavior, so the result matches your intent.', c: '#8dd8f7' },
+];
 import { submitLead } from '../lib/ghl';
 import { Reveal, SplitWords, burst } from './ui';
 
@@ -38,7 +69,16 @@ export function LeadershipLens() {
   const [form, setForm] = useState({ fn: '', em: '' });
   const [status, setStatus] = useState<null | { ok: boolean; msg: string }>(null);
   const [sending, setSending] = useState(false);
+  const [bStep, setBStep] = useState(0);
+  const [region, setRegion] = useState<Region | null>(null);
+  const [playing, setPlaying] = useState(false);
   const hp = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (!playing) return;
+    setRegion(null);
+    const t = setTimeout(() => { if (bStep >= 8) setPlaying(false); else setBStep(bStep === 6 ? 7 : bStep === 7 ? 8 : bStep + 1); }, 2600);
+    return () => clearTimeout(t);
+  }, [playing, bStep]);
   useEffect(() => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch { /* ignore */ } }, [st]);
 
   const sc = useMemo(() => {
@@ -82,14 +122,7 @@ export function LeadershipLens() {
     try { await navigator.clipboard.writeText(summary()); setStatus({ ok: true, msg: '✓ Copied. Paste it into your workbook.' }); } catch { setStatus({ ok: false, msg: 'Copy was blocked by your browser.' }); }
   };
 
-  const STEPS = ['What shaped you?', 'How you see the world', 'Run a moment through it'];
-  const stage = (n: string, color: string, tag: string, say: string, brain: string, q = false) => (
-    <motion.div className="fstage" style={{ ['--sc' as string]: color }} initial={{ opacity: 0, x: -14 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: +n * 0.07 }}>
-      <span className="d">{n}</span>
-      <div className="body"><span className="tag">{tag}</span><p className={`say${q ? ' q' : ''}`}>{say}</p><p className="brain">{brain}</p></div>
-    </motion.div>
-  );
-
+  const STEPS = ['What shaped you?', 'How you see the world', 'See it in your brain'];
   return (
     <section id="lens" className="block lens-sec">
       <div className="wrap">
@@ -143,7 +176,7 @@ export function LeadershipLens() {
                       </div>
                     </div>
                   )}
-                  <div className="qnav"><button className="linkbtn" onClick={() => setTab(0)}>← Adjust my picks</button>{L && <button className="btn" onClick={() => setTab(2)}>Run a moment through it <span className="arr">→</span></button>}</div>
+                  <div className="qnav"><button className="linkbtn" onClick={() => setTab(0)}>← Adjust my picks</button>{L && <button className="btn" onClick={() => setTab(2)}>See it in your brain <span className="arr">→</span></button>}</div>
                 </motion.div>
               )}
               {tab === 2 && (
@@ -151,22 +184,57 @@ export function LeadershipLens() {
                   {!L || !P ? <p className="lede">Your lens is empty. Choose a few items in step 1 first.</p> : (
                     <>
                       <div className="scen" role="group" aria-label="Choose a situation">
-                        {SCENARIOS.map((s) => <button key={s.id} aria-pressed={st.scenario === s.id} onClick={() => setSt((x) => ({ ...x, scenario: s.id }))}>{s.label}</button>)}
+                        {SCENARIOS.map((s) => <button key={s.id} aria-pressed={st.scenario === s.id} onClick={() => { setSt((x) => ({ ...x, scenario: s.id })); setBStep(0); }}>{s.label}</button>)}
                       </div>
-                      <div className="flow" key={st.scenario + ranked[0]}>
-                        {stage('01', '#d56bb4', 'Event happens', scn.label, 'Something occurs in your environment. On its own, it has no meaning yet.')}
-                        {stage('02', '#8dd8f7', 'Filtered through your lens', L.name, 'Prefrontal cortex: the thinking brain analyzes the event through everything that built your lens.')}
-                        {stage('03', '#9ecb3c', 'Stored memories pulled in', (st.picked.mem || []).join(' · ') || 'Your emotional memories from step 1 would surface here.', 'Hippocampus: past experiences add context to this moment.')}
-                        {stage('04', '#d56bb4', 'The story you tell yourself', `“${P[0]}”`, 'Interpretation: this is the moment your lens turns an event into a meaning.', true)}
-                        {stage('05', '#fca927', 'Emotional response', L.emotion, 'Amygdala: the emotional brain scans for threat or reward and fires fast.')}
-                        {stage('06', '#ff9a92', 'Reaction urge', L.urge, 'Your body prepares to fight, flee, freeze, or appease.')}
-                      </div>
-                      <motion.div className="pause" initial={{ scale: 0.95, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }} viewport={{ once: true }}>
-                        <b aria-hidden="true">II</b><p><strong>Pause.</strong> This is your opportunity to create space between what you feel and what you do.</p>
-                      </motion.div>
-                      <div className="paths">
-                        <div className="path auto"><h4>On autopilot</h4><div className="st"><b>Behavior</b>{P[1]}</div><div className="st"><b>Result</b>{P[2]}</div></div>
-                        <div className="path chosen"><h4>With a pause</h4><div className="st"><b>Choice</b>{P[3]}</div><div className="st"><b>Behavior</b>{P[4]}</div><div className="st"><b>Result</b>{P[5]}</div></div>
+                      <div className="brain-layout">
+                        <div className="brain-stage">
+                          <div className="brain-head">
+                            <span className="label" style={{ margin: 0, color: '#d8c3d2' }}>Your brain, right now</span>
+                            <button className="btn sm" onClick={() => setPlaying((p) => !p)} aria-pressed={playing}>{playing ? 'Pause ❚❚' : 'Play the moment ▶'}</button>
+                          </div>
+                          <BrainBoundary>
+                            <Suspense fallback={<div className="brain-canvas brain-loading">Loading your brain…</div>}>
+                              <Brain3D step={bStep} selected={region} onSelect={(r) => setRegion(r === region ? null : r)} />
+                            </Suspense>
+                          </BrainBoundary>
+                          <AnimatePresence mode="wait">
+                            <motion.div key={region ?? `s${bStep}`} className="brain-info" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                              {region ? (
+                                <><b style={{ color: REGIONS[region].color }}>{REGIONS[region].name} · {REGIONS[region].role}</b><p>{REGIONS[region].info}</p></>
+                              ) : (
+                                <><b style={{ color: BRAIN_STEPS[bStep].c }}>{BRAIN_STEPS[bStep].t}</b><p>{BRAIN_STEPS[bStep].d}</p></>
+                              )}
+                            </motion.div>
+                          </AnimatePresence>
+                          <div className="brain-legend">
+                            {(Object.keys(REGIONS) as Region[]).map((k) => (
+                              <button key={k} aria-pressed={region === k} onClick={() => setRegion(region === k ? null : k)} style={{ ['--c' as string]: REGIONS[k].color }}><i />{REGIONS[k].name}</button>
+                            ))}
+                          </div>
+                          <p className="brain-hint">Drag to turn the brain. Tap a glowing region to see what it does.</p>
+                        </div>
+
+                        <div>
+                          <div className="flow">
+                            {FLOW(L, P, scn.label, (st.picked.mem || []).join(' · ')).map((f, i) => (
+                              <button key={i} className={`fstage${bStep === i ? ' on' : ''}`} style={{ ['--sc' as string]: f.c }} onClick={() => { setBStep(i); setRegion(null); setPlaying(false); }} aria-pressed={bStep === i}>
+                                <span className="d">0{i + 1}</span>
+                                <span className="body"><span className="tag">{f.tag}</span><span className={`say${f.q ? ' q' : ''}`}>{f.say}</span><span className="brain">{f.brain}</span></span>
+                              </button>
+                            ))}
+                          </div>
+                          <button className={`pause${bStep === 6 ? ' on' : ''}`} onClick={() => { setBStep(6); setRegion(null); setPlaying(false); }}>
+                            <b aria-hidden="true">II</b><span><strong>Pause.</strong> This is your opportunity to create space between what you feel and what you do.</span>
+                          </button>
+                          <div className="paths">
+                            <button className={`path auto${bStep === 7 ? ' on' : ''}`} onClick={() => { setBStep(7); setRegion(null); setPlaying(false); }}>
+                              <h4>On autopilot · amygdala hijack</h4><span className="st"><b>Behavior</b>{P[1]}</span><span className="st"><b>Result</b>{P[2]}</span>
+                            </button>
+                            <button className={`path chosen${bStep === 8 ? ' on' : ''}`} onClick={() => { setBStep(8); setRegion(null); setPlaying(false); }}>
+                              <h4>With a pause · thinking brain leads</h4><span className="st"><b>Choice</b>{P[3]}</span><span className="st"><b>Behavior</b>{P[4]}</span><span className="st"><b>Result</b>{P[5]}</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                       <div className="takeaway">
                         <p>You don't respond to events. You respond to <span>your interpretation</span> of events.</p>

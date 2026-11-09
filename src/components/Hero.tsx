@@ -58,7 +58,7 @@ export function Hero() {
             <motion.div className="orbit" animate={reduce ? undefined : { rotate: 360 }} transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}><i style={{ background: '#fca927', color: '#fca927' }} /></motion.div>
             <motion.div className="orbit o2" animate={reduce ? undefined : { rotate: -360 }} transition={{ duration: 50, repeat: Infinity, ease: 'linear' }}><i style={{ background: '#8dd8f7', color: '#8dd8f7' }} /></motion.div>
             <motion.div className="orbit o3" animate={reduce ? undefined : { rotate: 360 }} transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}><i style={{ background: '#9ecb3c', color: '#9ecb3c' }} /></motion.div>
-            <button className="core" onClick={blow} aria-label="Spin the CCM pinwheel" data-cursor="big">
+            <button className="core" onClick={blow} aria-label="Spin the CCM pinwheel">
               <span className="core-disc glass" />
               <motion.span style={{ display: 'grid', placeItems: 'center', width: '100%', height: '100%', rotate: turn }}>
                 <motion.span style={{ display: 'grid', placeItems: 'center', width: '100%', height: '100%' }}

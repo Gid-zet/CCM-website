@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Magnetic, Pinwheel, onAnchor } from './ui';
 
 const LINKS = [
-  ['story', 'Our story'], ['services', 'Services'], ['grit', 'GRIT'], ['compass', 'Growth Compass'], ['lens', 'Leadership Lens'], ['insights', 'Insights'],
+  ['services', 'Services'], ['grit', 'GRIT'], ['assessments', 'Assessments'], ['compass', 'Growth Compass'], ['lens', 'Leadership Lens'], ['insights', 'Insights'],
 ] as const;
 
 /** The nav pinwheel spins like a real one: the faster you scroll, the faster it turns. */
@@ -35,7 +35,7 @@ export function Nav() {
     <>
       <motion.div className="progress" style={{ scaleX }} />
       <header className="nav">
-        <motion.div className="nav-in glass refract" initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+        <motion.div className="nav-in glass" initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}>
           <a className="brand" href="#top" onClick={onAnchor} aria-label="Cummings Consulting & Management, back to top">
             <WindPinwheel />
             <span><b>Cummings</b><small>Consulting &amp; Management</small></span>
