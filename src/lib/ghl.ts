@@ -3,6 +3,8 @@
  * Default: POST to the /api/lead serverless function, which upserts the contact in GoHighLevel.
  * Fallback: if VITE_GHL_WEBHOOK_URL is set, also (or only) POST to a GHL Workflow inbound webhook.
  */
+import { track } from './analytics';
+
 export type FormType = 'compass' | 'lens' | 'newsletter' | 'contact';
 
 export interface LeadPayload {
@@ -38,6 +40,7 @@ export async function submitLead(p: LeadPayload): Promise<{ ok: boolean; error?:
       error = undefined;
     } catch { /* keep the API result */ }
   }
+  track('Lead Submitted', { form: p.type, ok });
   return { ok, error };
 }
 

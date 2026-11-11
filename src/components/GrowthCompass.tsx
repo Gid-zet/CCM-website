@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useRef, useState, type FormEvent } from 'react';
 import { NEEDS, NEED_COLOR, NEED_LABEL, QUESTIONS, RATE, RESULTS, score, type ChoiceQ, type CompassState, type Need, type RateQ } from '../data/compass';
 import { BOOKING_URL, EQ_URL, submitLead } from '../lib/ghl';
+import { track } from '../lib/analytics';
 import { Magnetic, Pinwheel, Reveal, SplitWords, burst, scrollToId } from './ui';
 
 type Contact = { fn: string; ln: string; em: string; ph: string; org: string; jt: string; ce: boolean; cs: boolean };
@@ -26,7 +27,7 @@ export function GrowthCompass() {
   const n = QUESTIONS.length;
   const fill = step < 0 ? 4 : Math.min(4, (step / n) * 4);
 
-  const go = (s: number) => { setStep(s); requestAnimationFrame(() => card.current && card.current.getBoundingClientRect().top < 0 && scrollToId('compass-card')); };
+  const go = (s: number) => { if (s === 0 && step < 0) track('Compass Started'); if (s === n && step === n - 1) track('Compass Questions Done'); setStep(s); requestAnimationFrame(() => card.current && card.current.getBoundingClientRect().top < 0 && scrollToId('compass-card')); };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -62,6 +63,7 @@ export function GrowthCompass() {
     });
     setSending(false);
     setSent(out);
+    track('Compass Completed', { result: res.name, temperature: r.temp });
     go(n + 1);
     setTimeout(() => { const b = card.current?.getBoundingClientRect(); if (b) burst(b.left + b.width / 2, b.top + 120, 60); }, 350);
   };

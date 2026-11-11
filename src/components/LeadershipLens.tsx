@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Component, Suspense, lazy, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { LENSES, ORDER, PLAY, SCENARIOS, SOURCES, type LensKey, type ScenarioKey } from '../data/lens';
 import { submitLead } from '../lib/ghl';
+import { track } from '../lib/analytics';
 import { REGIONS, type Region } from './brainData';
 import { Magnetic, burst } from './ui';
 
@@ -144,7 +145,7 @@ export function LeadershipLens() {
                   </div>
                   <p>Your family, your experiences and the places you've worked built a lens you lead through every day. Find yours, then see what it does to your brain under pressure.</p>
                   <div className="lz-meta"><span>⏱ 2 minutes</span><span>👆 Just tap</span><span>🧠 See it in 3D</span></div>
-                  <Magnetic><button className="btn lz-cta" onClick={() => setScreen('source')}>Take the test <span className="arr">→</span></button></Magnetic>
+                  <Magnetic><button className="btn lz-cta" onClick={() => { track('Lens Started'); setScreen('source'); }}>Take the test <span className="arr">→</span></button></Magnetic>
                 </motion.div>
               )}
 
@@ -163,7 +164,7 @@ export function LeadershipLens() {
                     <button className="linkbtn" onClick={() => (src ? setSrc(src - 1) : setScreen('intro'))}>← Back</button>
                     {src < SOURCES.length - 1
                       ? <button className="btn plum" onClick={() => setSrc(src + 1)}>{(picked[srcNow.id] || []).length ? 'Next' : 'Skip'} <span className="arr">→</span></button>
-                      : <button className="btn" disabled={!total} onClick={() => setScreen('lens')}>Reveal my lens <span className="arr">→</span></button>}
+                      : <button className="btn" disabled={!total} onClick={() => { track('Lens Revealed', { lens: L.short }); setScreen('lens'); }}>Reveal my lens <span className="arr">→</span></button>}
                   </div>
                 </motion.div>
               )}
@@ -187,7 +188,7 @@ export function LeadershipLens() {
                   <h3>Which of these feels familiar?</h3>
                   <div className="lz-moments">
                     {SCENARIOS.map((s) => (
-                      <button key={s.id} onClick={() => { setScenario(s.id); setBStep(0); setScreen('brain'); }}>{s.label}<span aria-hidden="true">→</span></button>
+                      <button key={s.id} onClick={() => { track('Lens Brain Viewed', { moment: s.short }); setScenario(s.id); setBStep(0); setScreen('brain'); }}>{s.label}<span aria-hidden="true">→</span></button>
                     ))}
                   </div>
                 </motion.div>
@@ -212,8 +213,8 @@ export function LeadershipLens() {
                   <h3>Now it's your choice.</h3>
                   <p>A single breath gives your thinking brain time to catch up. What do you do?</p>
                   <div className="lz-choice">
-                    <button className="auto" onClick={() => { setPath('auto'); setScreen('result'); }}>React right away</button>
-                    <button className="pause" onClick={() => { setPath('pause'); setScreen('result'); }}>Pause first</button>
+                    <button className="auto" onClick={() => { track('Lens Choice', { choice: 'react' }); setPath('auto'); setScreen('result'); }}>React right away</button>
+                    <button className="pause" onClick={() => { track('Lens Choice', { choice: 'pause' }); setPath('pause'); setScreen('result'); }}>Pause first</button>
                   </div>
                 </motion.div>
               )}

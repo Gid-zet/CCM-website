@@ -52,3 +52,23 @@ npm run build
 ```
 
 Respects `prefers-reduced-motion` (pinned sequences become normal sections), keyboard-accessible, and works down to 320px wide.
+
+## Analytics (Vercel Web Analytics)
+
+`<Analytics />` from `@vercel/analytics/react` is in `src/App.tsx`, so every visit and page view is recorded once **Web Analytics is enabled** for the project in the Vercel dashboard (project → Analytics → Enable).
+
+Custom events (shown in the dashboard's **Events** panel; these need a Vercel Pro or Enterprise plan) are sent through `src/lib/analytics.ts`. No personal data is ever included:
+
+| Event | Properties | When |
+| --- | --- | --- |
+| Compass Started | – | "Start my compass" clicked |
+| Compass Questions Done | – | Reached the details gate |
+| Compass Completed | result, temperature | Details submitted, result shown |
+| Lens Started | – | "Take the test" clicked |
+| Lens Revealed | lens | Lens type revealed |
+| Lens Brain Viewed | moment | A moment chosen for the 3D brain |
+| Lens Choice | choice (react/pause) | Choice made at the pause |
+| Lead Submitted | form, ok | Any form sent to GoHighLevel |
+| Book Call Click | section | Any booking / "Book a strategy call" link |
+| Sample Download | file | A DiSC / Five Behaviors sample PDF |
+| Outbound Link | url, section | Any link to another site |
